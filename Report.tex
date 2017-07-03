@@ -1,0 +1,159 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\lstset{
+frame = single
+}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+{\scshape\LARGE School of Electronics and Computer Science Faculty of Physical and Applied Sciences \par}
+\vspace{1cm}
+{\scshape\Large University of Southampton\par}
+\vspace{1.5cm}
+{\huge\bfseries COMP1204- Unix Coursework\par}
+\vspace{2cm}
+{\Large\scshape 27634043 \par}
+{\Large\itshape Scott Williams\par}
+
+\vspace{2cm}
+{\large \today\par}
+\end{titlepage}
+
+\section{Scripts}
+
+The file, {\it countreviews.sh}, was created as follows:
+
+\begin{lstlisting}
+nano countreviews.sh
+\end{lstlisting}
+
+This command tells the operating system to start a new file called \textit{countreviews.sh} and edit it using a text editor called \textit{nano}.
+
+\begin{lstlisting}
+#!/bin/bash
+
+folder="$1"
+outputfile=./output
+\end{lstlisting}
+
+The first line, {\it \#!/bin/bash}, tells the OS to run this file as a bash script. That is a script that runs using common command line commands as found in the path to the shell specified in this line. \par The second line, \textit{folder="\$1"} creates an instance variable called \textit{folder} and saves the contents of the first parameter when running this code to it. \par {\it outputfile=./output} in the third line creates a new file called output in the same folder as the script.
+
+\begin{lstlisting}
+for file in "$folder"/*
+do
+number=`grep -c "<Author>" "$file"`
+filename=`basename $file .dat`
+echo "$filename $number" >> $outputfile
+done
+\end{lstlisting}
+
+In this section the program loops over every file in the folder and counts the occurrences of the phrase \textit{\textless Author \textgreater} in every file. \par The lines \textit{for file in "\$folder"/* do ... done} begin and end a for each that loops over the files stored in the instance variable \textit{folder}. \par The lines within the for each loop do the data gathering and formatting. The line \textit{number=`grep -c "\textless Author \textgreater" "\$file"`} does the actual counting and stores it in an instance variable called \textit{number}. This is done using the \textit{grep -c} command which finds instances of the words in the file. \par The line \textit{filename=`basename \$file .dat`} finds and formats the file name and stores it in an instance variable called \textit{filename}. This is done using the unique command \textit{basename} which removes the path from the file name and, with the option \textit{.dat} added, it removes the file extension too. \par And finally the line \textit{echo "\$filename \$number" \textgreater \textgreater \$outputfile} stores the two variables together in the \textit{ouputfile}.
+
+\begin{lstlisting}
+sort -k2 -n -r $outputfile > sorted.out
+
+cat sorted.out
+rm ./output
+rm ./sorted.out
+\end{lstlisting}
+
+Finally, in the last section of this code, the output is prepared, printed, and the temporary files removed. \par The first line, \textit{sort -k2 -n -r \$outputfile \textgreater sorted.out} numerically sorts the contents of the \textit{outputfile}, which at this point contains every hotel name and every number of ratings, in reverse order by using second column (that being the column with the data) and stores it in a new temporary file called \textit{sorted.out}. \par The next line, \textit{cat sorted.out} outputs all the contents of \textit{sorted.out}, which now contains all the data sorted to our liking. The following lines remove both temporary files thus leaving no trace. \par The program can be run, when in the same location as the reviews folder, by using the command:
+
+\begin{lstlisting}
+./countreviews.sh reviews_folder/
+\end{lstlisting}
+
+The output is as follows:
+
+\begin{lstlisting}
+hotel_218524 2686
+hotel_149399 1551
+hotel_208454 1223
+...
+\end{lstlisting}
+
+\section{Hypothesis Testing}
+
+\subsection{Average Ratings}
+
+The file, {\it averagereviews.sh}, was created as follows:
+
+\begin{lstlisting}
+nano averagereviews.sh
+\end{lstlisting}
+
+The program is similar to the previous script which merely counted the number of reviews in each file. However, this bash program finds the average rating for every hotel. \par It does this by first finding out how many reviews there are in each hotel's file and then sums the overall rating each reviewer gave to that hotel. \par The main bulk of the script is similar to the previous but there are two lines where the magic happens: at the line \textit{rating=\$(grep "\textless Overall \textgreater" "\$file" | grep -oP '(? \textless = \textless Overall \textgreater)[0-9]+' | awk '{SUM+= \$1} END {print SUM}')} the sum of all the ratings in the file is found and then stored in the instance variable \textit{rating}, and at the line \textit{average=`bc -l \textless \textless \textless \$rating/\$number`} the average rating is calculated by dividing the sum of the ratings by the total number of reviews in the file.
+
+\begin{lstlisting}
+for file in "$folder"/*
+do
+SUM=0
+filename=`basename $file .dat`
+number=`grep -c "<Overall>" "$file"`
+rating=$(grep "<Overall>" "$file" | grep -oP '(?<=<Overall>)[0-9]+' | awk '{SUM+= $1} END {print SUM}')	
+average=`bc -l <<< $rating/$number`
+echo "$filename $average" >> $outputfile
+done
+\end{lstlisting}
+
+The end of the program is similar to that of the script in section one. That is to say that the output is printed out and the temporary files removed as expected.
+
+\begin{lstlisting}
+#Sort outputfile
+sort -k2 -n -r ./output > ./sorted.out
+#Echo outputfile
+cat ./sorted.out
+#Remove temporary files
+rm ./output
+rm ./sorted.out
+\end{lstlisting}
+
+The program can be run, when in the same location as the reviews folder, by using the command:
+
+\begin{lstlisting}
+./averagereviews.sh reviews_folder/
+\end{lstlisting}
+
+It produces this output:
+
+\begin{lstlisting}
+hotel_188937 4.77952755905511811023
+hotel_203921 4.77777777777777777777
+hotel_230572 4.75000000000000000000
+...
+\end{lstlisting}
+
+\subsection{Significance}
+
+The file \textit{statistical \textunderscore sig.sh}, was created as follows:
+
+\begin{lstlisting}
+nano statistical_sig.sh
+\end{lstlisting}
+
+This program runs a two tailed t statistic test on the highest two rated hotels in the dataset to determine whether there exists a statistically significant difference between them or whether their difference is caused by the randomness of the data. \par It does this by first finding the standard deviation which is calculated by:
+
+\begin{equation}
+\sqrt{E(X^{2}) - E(X)^{2}}
+\end{equation}
+
+The script finds the expected value of the squares through the same way as the previous script by looping through the files and summing the overall rating given by each reviewer. However, as opposed to in the previous script, the overall ratings are squared before summed as shown in this line which is different:
+
+\begin{lstlisting}
+rating=$(grep "<Overall>" "$file" | grep -oP '(?<=<Overall>)[0-9]+' | awk '{SUM+= $1^2} END {print SUM}')
+\end{lstlisting}
+
+The program can be run, when in the same location as the reviews folder, by using the command:
+
+\begin{lstlisting}
+./statistical_sig.sh reviews_folder/
+\end{lstlisting}
+
+\section{Discussion}
+
+The company behind these files, TripAdvisor, faces many challenges in storing their reviews in such a manner. \par One such problem is that data managers in their organisation have to use Bash scripting and commands to access their hotel data. As has been demonstrated, this drains the soul of the programmer and should be avoided. \par Additionally, there are issues with the storage of the review data. By storing the reviews for every hotel in individual hotels they prolong the run time by forcing any script that using that data to have to access many hundreds of files. Accessing files is a time expensive endeavour and should be avoided. A better solution would store every review in one large file, distinguishing them perhaps with a new \textit{\textless Hotel \textgreater} section, thereby decreasing runtime. \par Another issue with the data is that the overall score given by the reviewer is completely independent to the scores given in the specific categories in the review (cleanliness, price, etc). A better system might automatically generate a weighted score based on what the reviewer gave in the other categories. \par Nevertheless, if it works then TripAdvisor has not real reason to change unless the waiting times for data processing becomes truly unbearable.
+
+\end{document}
